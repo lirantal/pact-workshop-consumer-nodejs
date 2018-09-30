@@ -6,6 +6,8 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "@nielsen-oss/pact-manifest-cli": "^1.2.0",
+    "@pact-foundation/pact": "^6.0.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.16.0",
