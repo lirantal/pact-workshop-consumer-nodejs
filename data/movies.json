@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "title": "The Matrix",
+    "plot": "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+    "year": 1999,
+    "length": 136,
+    "genre": [
+      "action",
+      "sci-fi"
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Interstellar",
+    "plot": "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+    "year": 2014,
+    "length": 169,
+    "genre": [
+      "adventure",
+      "drama",
+      "sci-fi"
+    ]
+  }
+]
