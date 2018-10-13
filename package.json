@@ -1,17 +1,29 @@
 {
   "name": "pact-workshop-consumer-nodejs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "test": "jest",
+    "pact:generate": "pact-manifest-cli generate --pact-files-path \"pacts/*.json\" --manifest-file pact-manifest.json",
+    "pact:publish:dev": "pact-manifest-cli publish --manifest-file pact-manifest.json --broker-base-url $BROKER_BASE_URL --broker-username $BROKER_USERNAME --broker-password $BROKER_PASSWORD --consumer-app-version $npm_package_version --pact-tag develop",
+    "pact:publish": "pact-manifest-cli publish --manifest-file pact-manifest.json --broker-base-url $BROKER_BASE_URL --broker-username $BROKER_USERNAME --broker-password $BROKER_PASSWORD --consumer-app-version $npm_package_version",
+    "pact:can-i-deploy": "$(find ./ -name pact-broker | grep -e 'bin/pact-broker$' | head -n 1) can-i-deploy --pacticipant 'Movies' --latest --broker-base-url $BROKER_BASE_URL --broker-username $BROKER_USERNAME --broker-password $BROKER_PASSWORD"
   },
   "dependencies": {
-    "@nielsen-oss/pact-manifest-cli": "^1.2.0",
-    "@pact-foundation/pact": "^6.0.1",
+    "axios": "^0.18.0",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
+    "dotenv": "^6.1.0",
     "express": "~4.16.0",
-    "jest": "^23.6.0",
     "morgan": "~1.9.0"
+  },
+  "devDependencies": {
+    "@nielsen-oss/pact-manifest-cli": "^1.2.0",
+    "@pact-foundation/pact": "^6.0.1",
+    "jest": "^23.6.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
