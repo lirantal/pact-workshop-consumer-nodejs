@@ -1,11 +1,10 @@
-const path = require('path')
-const ReviewsClient = require(path.resolve('./services/ReviewsClient'))
-
+const ReviewsClient = require('../utils/ReviewsClient')
 const { Pact, Matchers } = require('@pact-foundation/pact')
 
-const CONSUMER = 'Movies'
-const PROVIDER = 'Reviews'
-const MOCK_PROVIDER_PORT = 3002
+// Excercise uncomment:
+const CONSUMER = 'Movies' // What is the name of the consumer??
+const PROVIDER = 'Reviews' // What is the name of the provider??
+const MOCK_PROVIDER_PORT = 3002 // What is the provider's port details??
 
 describe('Reviews contract tests', () => {
   let provider
@@ -15,8 +14,8 @@ describe('Reviews contract tests', () => {
       consumer: CONSUMER,
       provider: PROVIDER,
       port: MOCK_PROVIDER_PORT,
-      log: path.resolve('./logs/pact.log'),
-      dir: path.resolve('pacts'),
+      log: process.cwd() + '/logs/pact.log',
+      dir: process.cwd() + '/pacts',
       logLevel: 'INFO',
       spec: 2
     })
