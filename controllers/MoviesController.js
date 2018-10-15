@@ -1,8 +1,17 @@
-const Repository = require('../repository')
-const ReviewsClient = require('../services/ReviewsClient')
+const Repository = require('../repositories/movies')
+const ReviewsClient = require('../utils/ReviewsClient')
 
 class MoviesController {
-  static async get(req, res) {
+  static async getAll(req, res) {
+    try {
+      const movies = Repository.findAll()
+      return res.status(200).json([...movies.values()])
+    } catch (err) {
+      return res.status(500).end(err)
+    }
+  }
+
+  static async getAllWithFilter(req, res) {
     try {
       const title = req.query.title || ''
       const moviesCollection = Repository.findBy('title', title)

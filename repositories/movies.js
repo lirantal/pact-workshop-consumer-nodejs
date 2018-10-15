@@ -27,6 +27,10 @@ class Repository {
     }
   }
 
+  static findAll() {
+    return moviesDatabase
+  }
+
   static findBy(key, value) {
     const results = new Map()
 

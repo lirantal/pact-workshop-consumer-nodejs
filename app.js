@@ -7,7 +7,7 @@ const moviesRouter = require('./routes/moviesRouter')
 
 if (process.env.DB_SEED) {
   console.log('+ Seeding DB data')
-  const Repository = require('./repository')
+  const Repository = require('./repositories/movies')
   const DataSet = require('./data/movies.json')
 
   DataSet.forEach(movieObject => {
