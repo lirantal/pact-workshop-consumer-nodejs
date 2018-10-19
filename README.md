@@ -359,9 +359,14 @@ To tie up the whole process together for running provider contract testing:
 
 Only once (1) and (2) are up and ready to process requests should (3) provider contract tests start executing.
 
-## Step 3: Publish/Retrieve Contracts from Broker
+## Step 3: Publish Contracts to Broker
 
-TBD
+Once the consumer has contract tests implemented and passing, we can publish them to the broker.
+
+To do so, we make use of the following tools:
+
+* Pact Manifest Generation - by running `npm run pact:generate` in a project that has an existing contract, it will create a manifest file that lists all the contracts and their tags.
+* Publish Contracts based on Manifest - by running `npm run pact:publish:dev` the manifest is investigated to figure out which contracts to publish and how to tag them.
 
 
 ## Step 4: Deploy to Production
