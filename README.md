@@ -282,6 +282,49 @@ const { Verifier } = require('@pact-foundation/pact')
 const pactVerifier = new Verifier()
 ```
 
+#### Setting up Provider States
+
+The states management service would expose an API endpoint that the pact runner can call and tell it to transition into a specific state.
+
+State is usually managed in web applications using a persistency store like a database, so it makes sense that the states management service can re-use a repository from the provider's API, but there are of course other ways to do it.
+
+In the following, is an example of a small ExpressJS web application that sets up a POST endpoint at `/setup` to handle the pact runner requests to change states.
+
+```js
+// Setup endpoint
+statesRouter.post('/setup', statesController)
+
+// Perform any database table migrations if required (this is mostly required for the workshop, and not for real-life use cases)
+await seed.tableMigrate()
+
+// Setup the controller for the endpoint
+async function statesController(req, res) {
+  try {
+    const state = req.body.state
+    
+    switch (state) {
+      case 'Has no dogs':
+        // Delete all the dogs entry in the database so that the 
+        // API will respond with a 404 Not Found
+        await seed.clearAllData()
+        break
+      case 'Has a few dogs':
+        // Delete all dogs and insert just a few entries to the database
+        await seed.clearAllData()
+        await seed.populateData()
+        break
+    }
+
+    return res.status(200).end()
+  } catch (err) {
+    console.log(err)
+    return res.status(500).end()
+  }
+}
+```
+
+The `seed` dependency used here is merely a small wrapper around database commands to clean the database, or insert some records.
+
 #### Replaying Contract Testing for the Provider
 
 ```js
@@ -306,6 +349,15 @@ pactVerifier.verifyProvider(options)
 ```
 
 Note: calling the `verifyProvider()` method may take some time to complete because it is instantiating the pact runner as well as changing states, and interacting with the provider API all during this method call. As such, to ensure it can complete for the test case, enough time needs to be allotted for the test to run.
+
+#### Putting it all together
+
+To tie up the whole process together for running provider contract testing:
+1. Execute the API service (i.e: `npm start`)
+2. Execute the state management API service (i.e: `npm run provider:states`)
+3. Run provider contract tests
+
+Only once (1) and (2) are up and ready to process requests should (3) provider contract tests start executing.
 
 ## Step 3: Publish/Retrieve Contracts from Broker
 
