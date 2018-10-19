@@ -1,29 +1,332 @@
+# Workshop Activity
+
 ## Prerequisites
 
 * Git
 * Node.js (>=8) and npm (>=5.5)
 * Internet access for the broker, npm and GitHub access
-* Basic understanding of JavaScript and Node.js/ExpressJS
+* Basic understanding of JavaScript and Node.js or ExpressJS
 
-## Setup
+
+## Intro 
+
+Congratulations!
+You have been recruited to the most exciting hollywood startup in the history of entertainment - YouMDB!
+
+YouMDB is a movies database service that makes use of bleeding edge blockchain technology, AR, VR, and IMIU-AR to provide information about movies and enables the latest Web ^2.3.1 interactions (because, semver) such as creating reviews, and real-time movie rating capabilities.
+
+As the lead software engineer, you are tasked with building the backend services in a rich Service Oriented Architecture with many many many microservices. Perhaps too many. We'll leave that for another workshop.
+
+Your mission dear Pacticipant, should you choose to accept it, is to seek out an efficient way of testing your microservices so that they're easy to reason about, easy to maintain, quick to test, and reliable to deploy without breaking in production. As always, should you or any of your team members be caught doing full deployment end-to-end tests (omg no!), Martin Fowler will disavow any knowledge of your actions. This README will self-destruct in five thousands microseconds.
+
+Good luck brave Pacticipant!
+
+## About YouMDB
+
+YouMDB is made up of two primary services which take the following roles:
+* The Movies service API - taking the role of a consumer (it consumes services from the Reviews service)
+* The Reviews service API - taking the role of a provider
+
+The consumer depends on the Reviews service API because for example, upon getting a request for a list of movies, it should include each movie's reviews statistics. There may be other interactions where the consumer and provider play together.
+
+## Setup (45min)
+
+Goal: Install all required dependencies to begin the workshop.
 
 * Clone the [consumer repository](#) and the [provider repository](#) to their respective directories
-* Install npm modules
-* Populate the `.env` variable in the root of the project directory with the broker's:
+* Install npm modules for each project
+* Populate the `.env` variable in the root of the project directory with the broker's details:
 ```
 BROKER_BASE_URL=http://localhost:80
 BROKER_USERNAME=guest
 BROKER_PASSWORD=guest
 ```
 
-## Setting the stage
+### Project Review
 
-Our consumer is a Movies service API
-Our provider is a Reviews service API
+Goal: Familiarize yourself with the project code-base.
 
-The consumer depends on the Reviews service API because upon getting a request for a list of movies, it should include each movie's reviews statistics, in specifically:
-* total reviews that were made on the title
-* the aggregated average rating of all the reviews made on the title
+The project has been scaffolded using the [express generator](https://expressjs.com/en/starter/generator.html) tool which is used as a quick web application skeleton to start developing with.
+
+The project has a simple example, yet unrelated to the workshop, for an API endpoint from the original scaffold (`routes/users.js`) to help get you started around ExpressJS. Don't hesitate to jump on to the official ExpressJS Guide for some help around the framework: https://expressjs.com/en/guide/routing.html.
+
+The project structure takes the following shape:
+
+```
+.
+├1─ app.js
+├2─ bin
+│   └── www
+├3─ package.json
+├4─ config
+│   ├── index.js
+├5─ data
+│   ├── movies.js
+├6─ routes
+│   ├── users.js
+│   ├── <new-route-file-goes-here>.js
+├7─ controllers
+│   ├── <new-controller-file-goes-here>.js
+├8─ services
+│   ├── <new-service-file-goes-here>.js
+├9─ repositories
+│   ├── movies.js (or reviews.js for the provider)
+├10 __tests__
+│   ├── <new-test-spec-file-goes-here>.js
+├11 pacts
+│   ├── <pact-file-will-be-generated-here>.js
+├12 .env
+├13 logs
+│   ├── pact.log
+```
+
+1. `app.js` - the entry point for the Node.js web API which instantiates an ExpressJS web app and exports it
+2. `bin/www` - uses the exported ExpressJS web app to bind it to a local host
+3. `package.json` - the project's manifest with the relevant npm run commands and dependencies 
+4. `config/index.js` - used as a config store for configuration used through-out the project
+5. `data/movies.json` - the movies storage represented as a JSON file
+6. `routes/*` - the routes file for each endpoint
+7. `controllers/*` - controllers that handle the request and response
+8. `utils/*` - should contain utilities you use, for example the HTTP client library that queries the provider (Reviews service)
+9. `repositories/movies.js` - encapsulates the data access and acts as a mocked in-memory persistent store 
+10. `__tests__/*`- the consumer contract test(s) you write will go here
+11. `pacts/*` - (consumer-only) the generated pact contract will be placed here upon running a successful pact contract test
+12. `.env` - the execution of npm commands or the API service might rely on having configuration in environment variables. This is the place to put them. The file is already added to `.gitignore` but nevertheless be careful not to commit and push it.
+13. `pact.log` - logs for the pact testing framework
+
+The recommended layout of the project breaks into several abstractions such as controllers, utils and repositories and it will make it easy for you to follow that pattern and jump from one step to another during the workshop. It is definitely not a recommendation for best practices around projects structure but instead it's an attempt here in being concise and simple. With that said, if you're fairly confident with Node.js development you're more than welcome to follow any other project structures you see fit.
+
+## Step 1: Build Consumer and Provider API endpoints (1 hour)
+
+Requirements:
+* The Movies service should expose an API endpoint (hopefully RESTful) that lists movies details.
+* A movie's details are for you to come up with. Some hints are: title, genre, plot, year and length of the movie.
+* A movie's details should include reviews statistics about each movie as part of the movie's details. Specifically, for each movie it should show how many reviews were written for it, and what is the total average of rating the movie received.
+* The Reviews service should implement API endpoints per the contract that was decided upon.
+
+The requirements set out above requires an interaction between the Movies and the Reviews services.
+As a consumer that drives the contract, come up with your expectations for the API from the Reviews services. Remember that this is not dictatorship-driven contracts, and as such it is expected that both Movies and Reviews teams collaborate respectfully on the API contract.
+
+Consumer Development Guidelines:
+* You probably need to add a new route
+* The new route probably needs a new controller
+* The new controller needs to find movies, right? There's already a repository created for you with the necessary methods to work on the data. However, you're welcome to make changes as you see fit.
+* The Movies service needs a service to interact with the Reviews service and query it for the reviews statistics. You can create this service which is essentially an HTTP client, and place it under `utilities` then use it from the controller or another service to query the Reviews service. Hint: the `axios` HTTP client package is already installed for you.
+* Once you created the API how do you know it works? We're not yet doing TDD here so feel comfortable to hack away with curl as needed. P.S. don't forget to start the server, right? `npm run start`.
+
+Provider Development Guidelines:
+* As a provider you need to build the relevant endpoint per the contract agreed upon with the consumer.
+* Follow the guidelines mentioned for the consumer as building blocks for your API.
+
+Notes:
+* You do not need to implement filtering the results
+* You do not need to implement pagination for the results
+
+**Bonus points** if you have time to add a filter to the movies API which retrieve only movies with specific title
+
+
+## Step 2: Test Consumer and Provider API endpoints
+
+Once we have the service APIs for both consumer and provider endpoints, we can now proceed to contract testing for both of them.
+
+### Consumer Testing
+
+Consumer contract testing is about ensuring that the interface outside to the provider is set as expected and is guarded by the contract, as well as makes sure that internally for the consumer, the consumer code doesn't break and adheres to the contract.
+
+Due to the above, we can deduct that consumer contract testing is valuable when it runs fast as unit tests, and that it unit tests our HTTP client utility that interacts with the provider.
+
+Requirements:
+* Create/Update the Reviews HTTP client utility for a contract test as agreed between the consumer and provider.
+
+Consumer Development Guidelines:
+* Unit tests can be found in the `__tests__/` directory and are managed by the Jest testing framework.
+* For contract testing we use the open source Pact framework (`@pact-foundation/pact`)
+* At first, you need to setup the pact server to run as a mock for the Reviews service. Look for instantiating a `new Pact()` as the provider object and then setting it up to listen for interactions, i.e: `provider.setup()`.
+* Next, continue to writing a unit test for the Reviews client which defines an interaction, triggers a method on the Reviews client utility and asserts the utility method as well as verify that the interaction has been made successfully. More on how to write a contract unit test below.
+* Finally, after all the interactions and expectations been simulated it is required to call `provider.finalize()` which validates all interactions and creates the pact contract.
+* To execute your contract testing run `npm run test` just as if you'd run unit tests on other projects.
+
+#### Contract Testing as Unit Tests
+
+The heart of the consumer contract testing is the unit test.
+The Reviews client utility is by nature code that interacts with another service, and so its essence is to make calls such as API requests to its provider endpoints, massage responses and return them.
+
+The concept is that we trigger real methods on the consumer endpoints or program code which sends real requests, and this is where the Pact framework comes in and spins up a mock server that catches these requests and responds the way it was programmed.
+
+How does the pact mock service know what interactions to expect and what to reply? We need to set it up.
+
+The beginning of a consumer contract test is therefore to setup an interaction with `provider.addInteraction()` which expects a `state` that defines the interaction, a `withRequest` clause that specifies the request details such as the method used (i.e: GET), the path and any query parameters associated with it. Lastly an interaction includes a `willRespondWith` clause which will specify the expected response from the provider including the HTTP status code, any response headers and finally the body of the response.
+
+Once an interaction has been defined and recorded on the Pact framework's mock server, the next step is to trigger the Reviews client utility to make a real call, assert any response data that was returned, and then assert on `provider.verify()` that the interaction has been met as expected.
+
+#### Setting up
+
+We begin by creating a pact mock server that acts as the provider for the unit tests. To access the Pact object import it from the JavaScript SDK (we will need Matchers later on so that is imported too):
+
+```js
+const { Pact, Matchers } = require('@pact-foundation/pact')
+```
+
+Next, we need to define the contract parties along with some details to tell the mock provider how to spin up:
+
+```js
+provider = new Pact({
+  // Setting up the contract
+  consumer: 'The consumer name',
+  provider: 'The provider name',
+  port: 'What port the pact mock provider should listen on for incoming requests?',
+
+  // Details for the mock server 
+  // Location for log file to help debug tests
+  log: process.cwd() + '/logs/pact.log',
+  // Directory to create the contract at
+  dir: process.cwd() + '/pacts',
+  // Debug logs log level
+  logLevel: 'INFO',
+  // Specification version
+  spec: 2
+})
+```
+
+Finally, spin it up:
+
+```js
+provider.setup()
+```
+
+**Note**: all the methods on the provider instance are asynchronous and return a promise.
+
+#### Testing an API Contract
+
+In our use-case we are testing HTTP APIs, so a contract can be enforced on the expected request sent to the provider, and the expected response that the provider sends back. We call this set an interaction.
+
+Interactions take place in a specific state the provider is in. For example, if an API is supposed to return `404 Not Found` then it means it should go into a state of 'no data'. More on that in the provider testing section. For the consumer testing, it is only required to define these states in each interaction.
+
+An interaction there-fore, can be composed of the following:
+* `state` - the provider's state for this interaction
+* `uponReceiving` - a description of the request
+* `withRequest` - an object that defines the contract for the expected request received by the provider 
+* `willRespondWith` - an object that defines the contract for the expected response sent by the provider
+
+An example is as follows:
+
+```js
+await provider.addInteraction({
+  state: 'Has a few dogs',
+  uponReceiving: 'a for a list of dogs filtered by dog type',
+  withRequest: {
+    method: 'GET',
+    path: `/dogs`,
+    query: {
+      'dogType': 'beagle' 
+    }
+  },
+  willRespondWith: {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: [
+      {
+        'id': '1',
+        'name': 'leo'
+      }
+    ]
+  }
+})
+```
+
+To assert that indeed the interaction was successful the following `verify()` promise call should resolve successfully, otherwise there was an error:
+
+```js
+provider.verify()
+```
+
+If the client library under test that makes the HTTP API call returns a result, you might also want to assert on that.
+
+**Note**: You probably want to consult the Contract Testing Guidelines and Best Practices for how to properly write contract tests.
+
+
+#### Creating The Contract
+
+Assuming that all tests passed successfully, we can instruct the pact library to create the pact contract from all the interactions and specifications:
+
+```js
+provider.finalize()
+```
+
+This happens at the end of all the tests and you can expect to see the generated pact contract in the directory you specified when instantiating and setting up Pact (it should be in `/pacts/` if you haven't changed the suggested configuration). 
+
+### Provider Testing
+
+Contract testing for the provider means that the provider needs to ensure that the API it provides adheres to the contract that was previously set.
+
+To test that, the Pact framework in this case is used as a runner that replays the request to a running instance of the provider API, and asserts that the provider API correctly responded with the response that is in the contract.
+
+These requests that the Pact runner sends are the interactions that were defined in the contract, which is a result of consumer contract testing. Interactions also have other metadata on them such as what state they are in. For example, if the provider's API need to respond with a `404 Not Found` when there isn't any data in the database, then in essence it needs to be set in such state where no data exists in the database.
+
+A general flow of how provider testing would take place:
+* Contracts already exist
+* The provider API service spins up, waiting to handle requests
+* A state management API service spins up, waiting to handle requests that tell it how to transition the provider's API service state from one to another - the purpose of this API is to manage interaction states and this is the major part of provider testing
+* Pact framework downloads contracts
+* Pact framework spins up a runner that replays the request as specified in each interaction, and asserts on the responses it received from the provider
+* Pact framework, before replaying each request, makes a call to the state management API to set the required state
+
+Note: providers would be blocked on consumers creating a contract file before they can go on with contract testing on their side.
+
+#### Setting up 
+
+Instantiate a pact verifier instance.
+
+```js
+const { Verifier } = require('@pact-foundation/pact')
+const pactVerifier = new Verifier()
+```
+
+#### Replaying Contract Testing for the Provider
+
+```js
+const options = {
+  provider: 'The provider name',
+  providerBaseUrl: 'The base url to hit the provider, for example: http://localhost:8080',
+  providerStatesSetupUrl: 'The URL for the states management API that pact verified will hit with each interaction state',
+  pactBrokerUrl: 'The URL for the broker from which the pact verifier will pull the contracts',
+  // Specific tags to fetch
+  tags: ['develop'],
+  // Authentication details for the pact broker
+  pactBrokerUsername: config.pactBrokerUsername,
+  pactBrokerPassword: config.pactBrokerPassword,
+  // Send verification results
+  publishVerificationResult: true,
+  // Set the provider version for the results that
+  // will be published to the broker after provider testing
+  providerVersion: pkg.version,
+}
+
+pactVerifier.verifyProvider(options)
+```
+
+Note: calling the `verifyProvider()` method may take some time to complete because it is instantiating the pact runner as well as changing states, and interacting with the provider API all during this method call. As such, to ensure it can complete for the test case, enough time needs to be allotted for the test to run.
+
+## Step 3: Publish/Retrieve Contracts from Broker
+
+TBD
+
+
+## Step 4: Deploy to Production
+
+TBD
+
+Can you deploy?
+Explore the broker
+
+## Step 4: Integrate a CI/CD Pipeline
+
+TBD
+
+
+
+
+## TBD ???
 
 Example Movies consumer service API endpoint and response prior to integration with the Reviews service: `/movies?title=the%20matrix`
 ```json
@@ -55,6 +358,11 @@ The Reviews service API is a provider for the Movies service and supports the fo
   },
 ]
 ```
+
+
+# Operating the Consumer & Provider
+
+The following sections will describe how to run the consumer and provider API services, how to run their contract tests, publish and verify contracts and how to debug the APIs.
 
 ## Consumer
 
@@ -103,7 +411,7 @@ Run the `can-i-deploy` command to check if all relevant contracts have been veri
 
 
 ```bash
-npm run pact:can-i-deploy
+BROKER_BASE_URL=http://localhost BROKER_USERNAME=guest BROKER_PASSWORD=guest npm run pact:can-i-deploy
 ```
 
 ### Publish Consumer Contracts
@@ -249,3 +557,7 @@ body: [
   }
 ]
 ```
+
+# Contract Testing Guidelines and Best Practices
+
+TBD
