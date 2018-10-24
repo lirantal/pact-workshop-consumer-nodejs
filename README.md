@@ -380,6 +380,33 @@ Explore the broker
 
 TBD
 
+## References: Suggested APIs
+
+GET /reviews
+ - All reviews available such as:
+  [
+    {
+      "id": "1",
+      "movieId": "1",
+      "headline": "this is a good movie",
+      "message": "because it features keanu reeves"
+    }
+  ]
+
+GET /stats
+ - Reviews statistics for all movies
+GET /stats?movieIds[]=1&movieIds[]=2
+ - Reviews statistics available for bulk movies specified, such as:
+  [
+   {
+     "id": "1",
+     "movieId": "1",
+     "totalReviews: 100,
+     "averageRating": 3.5
+   }
+ ]
+
+
 
 
 
@@ -400,17 +427,17 @@ Example Movies consumer service API endpoint and response prior to integration w
 }
 ```
 
-The Reviews service API is a provider for the Movies service and supports the following API endpoint and response to query for movie reviews information: `/reviews?movieId[]=1&movieId[]=2`
+The Reviews service API is a provider for the Movies service and supports the following API endpoint and response to query for movie review statistics information: `/stats?movieId[]=1&movieId[]=2`
 ```json
 [
   {
     "id": "1",
-    "total": 100,
+    "totalReviews": 100,
     "averageRating": 7.5
   },
   {
     "id": "2",
-    "total": 32,
+    "totalReviews": 32,
     "averageRating": 9
   },
 ]
@@ -511,7 +538,7 @@ Seed reviews data
 ```json
   {
     "id": 1,
-    "total": 100,
+    "totalReviews": 100,
     "averageRating": 7.5
   },
 ```
@@ -523,17 +550,30 @@ DEBUG=1 DB_SEED=1 npm start
 ```
 
 ```bash
-curl 'http://localhost:3001/reviews?movieId\[\]=4&movieId\[\]=3'
+curl 'http://localhost:3002/stats?movieId\[\]=4&movieId\[\]=3'
 ```
 
 
 # Pact.js Matching Rules Cheatsheet
 
+The following matching options are exposed by Pact's Matchers object:
+
+```js
+const { Matchers } = require("@pact-foundation/pact")
+const { eachLike, like, term, iso8601DateTimeWithMillis } = Matchers
+```
+
+To further explain them:
+* `eachLike` is used to specify an array of items to match, where the items can be anything from a primitive type like a boolean, string or number, to more complex objects like other arrays or objects.
+* `like` is used to match a single data type (primitive or complex)
+* `term` is used as a regex to match string data types
+* `iso8601DateTimeWithMillis` is helpful to match ISO date types, such as: 2018-01-01T00:00:00.000Z
+
+
 ## Request Matching (query)
 
 * Request matching will fail if the request were made with query params, or body payloads (i.e: POST or PUT requests) that don't exist in the interaction.
 * Request matching will not fail if a header is missing from the request to allow easy interop with servers and proxies without brittle specification of each header property
-
 
 
 ## Response Matching (body)
@@ -587,6 +627,14 @@ query: {
 }
 ```
 
+The `eachLike` matcher has another parameter that can be set to express that a minimum number of items is expected to match, such as:
+
+```js
+query: {
+  'movieId[]': Matchers.eachLike('1', {min: 100})
+}
+```
+
 ## Match opaque types
 
 - Use-case:
@@ -596,7 +644,7 @@ Matching expected type of the payload with a generated static value for the mock
 body: [
   {
     'id': '1231',
-    'total': 100,
+    'totalReviews': 100,
     'averageRating': 7.5
   }
 ]
@@ -609,7 +657,7 @@ Matcher used in the `willRespondWith` clause:
 body: [
   {
     'id': Matchers.like('1'),
-    'total': Matchers.like(100),
+    'totalReviews': Matchers.like(100),
     'averageRating': Matchers.like(7.5)
   }
 ]
