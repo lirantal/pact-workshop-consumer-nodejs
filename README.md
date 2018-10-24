@@ -663,6 +663,36 @@ body: [
 ]
 ```
 
+
+## Match string types based on regular expressions
+
+- Use-case:
+
+Matching expected type of the payload with a generated static value for the mocked provider:
+```js
+body: [
+  {
+    'id': '1231',
+    'totalReviews': 100,
+    'averageRating': 7.5
+  }
+]
+```
+
+- Matcher Example:
+
+Matcher used in the `willRespondWith` clause:
+```js
+body: [
+  {
+    'id': Matchers.like('1'),
+    'totalReviews': Matchers.like(100),
+    'averageRating': Matchers.like(7.5)
+  }
+]
+```
+
+
 # Contract Testing Guidelines and Best Practices
 
 TBD
