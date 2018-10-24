@@ -30,6 +30,35 @@ describe('Reviews contract tests', () => {
   describe('Reviews client tests', () => {
     test('should receive movie statistics for specified movies', async () => {
       await provider.addInteraction({
+        state: 'Has reviews statistics for movie',
+        uponReceiving: 'a request for movies stats summary',
+        withRequest: {
+          method: 'GET',
+          path: `/stats`,
+          query: {
+            'movieId[]': Matchers.eachLike('1')
+          }
+        },
+        willRespondWith: {
+          status: 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: [
+            {
+              'id': Matchers.like('1'),
+              'totalReviews': Matchers.like(100),
+              'averageRating': Matchers.like(7.5)
+            }
+          ]
+        }
+      })
+
+      const result = await ReviewsClient.getMoviesStatistics([1])
+      expect(result.length).toEqual(1)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+
+    test('should successfully receive a request for a movies review summary', async () => {
+      await provider.addInteraction({
         state: 'Has a few reviews',
         uponReceiving: 'a request for movie reviews summary',
         withRequest: {
@@ -42,18 +71,64 @@ describe('Reviews contract tests', () => {
         willRespondWith: {
           status: 200,
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: [
+          body: Matchers.eachLike(
             {
-              'id': Matchers.like('1'),
-              'total': Matchers.like(100),
-              'averageRating': Matchers.like(7.5)
+              'movieId': '1',
+              'headline': Matchers.like('a clickbait headline'),
+              'message': Matchers.like('hopefully a positive review'),
+              'ipAddress': Matchers.ipv4Address(),
+              "gender": Matchers.term({
+                matcher: 'F|M',
+                generate: 'F'
+              }),
+              'anonymous': Matchers.boolean(),
+              'createdAt': Matchers.iso8601DateTimeWithMillis()
             }
-          ]
+          )
         }
       })
 
-      const result = await ReviewsClient.getMovieReviews([1])
+      const result = await ReviewsClient.getMoviesReviews([1])
       expect(result.length).toEqual(1)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+
+    test('should handle a request that responds with no reviews summary', async () => {
+      await provider.addInteraction({
+        state: 'Has no reviews',
+        uponReceiving: 'a request for movies reviews',
+        withRequest: {
+          method: 'GET',
+          path: `/reviews`,
+          query: {
+            'movieId[]': Matchers.eachLike('1')
+          }
+        },
+        willRespondWith: {
+          status: 404
+        }
+      })
+
+      const result = await ReviewsClient.getMoviesReviews([1])
+      expect(result.length).toEqual(0)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+
+    test('should handle a request that responds with no stats summary', async () => {
+      await provider.addInteraction({
+        state: 'Has no statistics',
+        uponReceiving: 'a request for movies statistics',
+        withRequest: {
+          method: 'GET',
+          path: `/stats`
+        },
+        willRespondWith: {
+          status: 404
+        }
+      })
+
+      const result = await ReviewsClient.getAllMoviesStatistics()
+      expect(result.length).toEqual(0)
       await expect(provider.verify()).resolves.toBeTruthy()
     })
   })
