@@ -40,7 +40,7 @@ class ReviewsClient {
         },
         responseType: 'json'
       })
-  
+
       return response.data
     } catch (err) {
       return []
