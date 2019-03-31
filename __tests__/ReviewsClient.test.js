@@ -28,7 +28,34 @@ describe('Reviews contract tests', () => {
   })
 
   describe('Reviews client tests', () => {
+
     test('should receive movie statistics for specified movies', async () => {
+      await provider.addInteraction({
+        state: 'Has reviews statistics for movie',
+        uponReceiving: 'a request for all movies stats summary',
+        withRequest: {
+          method: 'GET',
+          path: `/stats`
+        },
+        willRespondWith: {
+          status: 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: [
+            {
+              'id': Matchers.like('1'),
+              'totalReviews': Matchers.like(100),
+              'averageRating': Matchers.like(7.5)
+            }
+          ]
+        }
+      })
+
+      const result = await ReviewsClient.getAllMoviesStatistics()
+      expect(result.length).toEqual(1)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+
+    test.skip('should receive movie statistics for specified movies', async () => {
       await provider.addInteraction({
         state: 'Has reviews statistics for movie',
         uponReceiving: 'a request for movies stats summary',

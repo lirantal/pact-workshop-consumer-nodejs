@@ -7,20 +7,11 @@
   },
   "interactions": [
     {
-      "description": "a request for movies stats summary",
+      "description": "a request for all movies stats summary",
       "providerState": "Has reviews statistics for movie",
       "request": {
         "method": "GET",
-        "path": "/stats",
-        "query": "movieId[]=1",
-        "matchingRules": {
-          "$.query.movieId[]": {
-            "min": 1
-          },
-          "$.query.movieId[][*].*": {
-            "match": "type"
-          }
-        }
+        "path": "/stats"
       },
       "response": {
         "status": 200,

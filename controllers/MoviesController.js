@@ -11,6 +11,32 @@ class MoviesController {
     }
   }
 
+  static async getWithAllStatsWithFilter(req, res) {
+    try {
+      const title = req.query.title || ''
+      const moviesCollection = Repository.findBy('title', title)
+
+      if (moviesCollection.size <= 0) {
+        return res.status(404).end()
+      }
+
+      const statsSummary = await ReviewsClient.getAllMoviesStatistics()
+
+      statsSummary.forEach(movieStats => {
+        const movie = moviesCollection.get(movieStats.id)
+        if (movie) {
+          moviesCollection.set(movie.id,
+            { ...movie, totalReviews: movieStats.totalReviews, averageRating: movieStats.averageRating })
+        }
+      })
+
+      return res.status(200).json([...moviesCollection.values()])
+
+    } catch (err) {
+      return res.status(500).end()
+    }
+  }
+
   static async getWithStatsWithFilter(req, res) {
     try {
       const title = req.query.title || ''
