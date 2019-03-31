@@ -40,13 +40,13 @@ describe('Reviews contract tests', () => {
         willRespondWith: {
           status: 200,
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: [
+          body: Matchers.eachLike(
             {
               'id': Matchers.like('1'),
               'totalReviews': Matchers.like(100),
               'averageRating': Matchers.like(7.5)
             }
-          ]
+          ) 
         }
       })
 

@@ -26,13 +26,19 @@
           }
         ],
         "matchingRules": {
-          "$.body[0].id": {
+          "$.body": {
+            "min": 1
+          },
+          "$.body[*].*": {
             "match": "type"
           },
-          "$.body[0].totalReviews": {
+          "$.body[*].id": {
             "match": "type"
           },
-          "$.body[0].averageRating": {
+          "$.body[*].totalReviews": {
+            "match": "type"
+          },
+          "$.body[*].averageRating": {
             "match": "type"
           }
         }
