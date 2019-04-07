@@ -7,20 +7,11 @@
   },
   "interactions": [
     {
-      "description": "a request for movies stats summary",
+      "description": "a request for all movies stats summary",
       "providerState": "Has reviews statistics for movie",
       "request": {
         "method": "GET",
-        "path": "/stats",
-        "query": "movieId[]=1",
-        "matchingRules": {
-          "$.query.movieId[]": {
-            "min": 1
-          },
-          "$.query.movieId[][*].*": {
-            "match": "type"
-          }
-        }
+        "path": "/stats"
       },
       "response": {
         "status": 200,
@@ -35,100 +26,21 @@
           }
         ],
         "matchingRules": {
-          "$.body[0].id": {
-            "match": "type"
-          },
-          "$.body[0].totalReviews": {
-            "match": "type"
-          },
-          "$.body[0].averageRating": {
-            "match": "type"
-          }
-        }
-      }
-    },
-    {
-      "description": "a request for movie reviews summary",
-      "providerState": "Has a few reviews",
-      "request": {
-        "method": "GET",
-        "path": "/reviews",
-        "query": "movieId[]=1",
-        "matchingRules": {
-          "$.query.movieId[]": {
-            "min": 1
-          },
-          "$.query.movieId[][*].*": {
-            "match": "type"
-          }
-        }
-      },
-      "response": {
-        "status": 200,
-        "headers": {
-          "Content-Type": "application/json; charset=utf-8"
-        },
-        "body": [
-          {
-            "movieId": "1",
-            "headline": "a clickbait headline",
-            "message": "hopefully a positive review",
-            "ipAddress": "127.0.0.13",
-            "gender": "F",
-            "anonymous": true,
-            "createdAt": "2015-08-06T16:53:10.123+01:00"
-          }
-        ],
-        "matchingRules": {
           "$.body": {
             "min": 1
           },
           "$.body[*].*": {
             "match": "type"
           },
-          "$.body[*].headline": {
+          "$.body[*].id": {
             "match": "type"
           },
-          "$.body[*].message": {
+          "$.body[*].totalReviews": {
             "match": "type"
           },
-          "$.body[*].ipAddress": {
-            "match": "regex",
-            "regex": "^(\\d{1,3}\\.)+\\d{1,3}$"
-          },
-          "$.body[*].gender": {
-            "match": "regex",
-            "regex": "F|M"
-          },
-          "$.body[*].anonymous": {
-            "match": "type"
-          },
-          "$.body[*].createdAt": {
-            "match": "regex",
-            "regex": "^\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d{3}([+-][0-2]\\d:[0-5]\\d|Z)$"
-          }
-        }
-      }
-    },
-    {
-      "description": "a request for movies reviews",
-      "providerState": "Has no reviews",
-      "request": {
-        "method": "GET",
-        "path": "/reviews",
-        "query": "movieId[]=1",
-        "matchingRules": {
-          "$.query.movieId[]": {
-            "min": 1
-          },
-          "$.query.movieId[][*].*": {
+          "$.body[*].averageRating": {
             "match": "type"
           }
-        }
-      },
-      "response": {
-        "status": 404,
-        "headers": {
         }
       }
     },
