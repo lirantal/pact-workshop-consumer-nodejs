@@ -107,14 +107,14 @@ Requirements:
 The requirements set out above requires an interaction between the Movies and the Reviews services.
 As a consumer that drives the contract, come up with your expectations for the API from the Reviews services. Remember that this is not dictatorship-driven contracts, and as such it is expected that both Movies and Reviews teams collaborate respectfully on the API contract.
 
-Consumer Development Guidelines:
+### Consumer Development Guidelines
 * You probably need to add a new route
 * The new route probably needs a new controller
 * The new controller needs to find movies, right? There's already a repository created for you with the necessary methods to work on the data. However, you're welcome to make changes as you see fit.
 * The Movies service needs a service to interact with the Reviews service and query it for the reviews statistics. You can create this service which is essentially an HTTP client, and place it under `utilities` then use it from the controller or another service to query the Reviews service. Hint: the `axios` HTTP client package is already installed for you.
 * Once you created the API how do you know it works? We're not yet doing TDD here so feel comfortable to hack away with curl as needed. P.S. don't forget to start the server, right? `npm run start`.
 
-Provider Development Guidelines:
+### Provider Development Guidelines
 * As a provider you need to build the relevant endpoint per the contract agreed upon with the consumer.
 * Follow the guidelines mentioned for the consumer as building blocks for your API.
 
@@ -122,8 +122,314 @@ Notes:
 * You do not need to implement filtering the results
 * You do not need to implement pagination for the results
 
-**Bonus points** if you have time to add a filter to the movies API which retrieve only movies with specific title
+### Consumer Step-by-step
+<details><summary>Hint 1: Discuss the API contract with your Provider!</summary>
+<p>
+You need to query the Reviews service in order to fetch statistics about the movie. How would this data look like?
 
+* What is going to be the endpoint you will call on the provider side?
+* What do you expect to receive back as data? What structure of fields?
+* Are you going to do a GET or a POST?
+
+</p>
+</details>
+
+<details><summary>Hint 2: Scaffold out a quick and simple /movies endpoint</summary>
+<p>
+Let's get our hands dirty with a simple `/movies` endpoint that just returns all the movies in your database, and doesn't interact with anything else. Just to keep things simple and get the code rolling quick!
+
+#### New router
+In [app.js](./app.js) add a new router to handle all the requests to `/movies`:
+```js
+const moviesRouter = require('./routes/moviesRouter')
+app.use('/movies', moviesRouter)
+```
+
+#### New route
+As the router references above, we need a new route.
+
+Create a new file [routes/moviesRouter.js](./routes/moviesRouter.js) and append it with the following:
+```js
+const express = require('express')
+const router = express.Router()
+
+const MoviesController = require('../controllers/MoviesController')
+
+router.get('/', MoviesController.getAll)
+
+module.exports = router
+```
+
+Which declares a new `/movies` endpoint that correlates with HTTP `GET` requests and calls a movie controller
+
+#### New controller
+Let's get that new movies controller going!
+
+Create a new file at [controllers/MoviesController.js](./controllers/MoviesController.js) and let's drop the following code snippet into it:
+
+```js
+const Repository = require('../repositories/movies')
+
+class MoviesController {
+  static async getAll(req, res) {
+    try {
+      const movies = Repository.findAll()
+      return res.status(200).json([...movies.values()])
+    } catch (err) {
+      return res.status(500).end(err)
+    }
+  }
+}
+
+module.exports = MoviesController
+```
+
+In the above we defined a simpler controller that requires the repository, which is our data access layer. Then defined a method that upon receiving a request loads all the movies in the database, and sends them back.
+
+</p>
+</details>
+
+<details><summary>Hint 3: Did you test out the /movies endpoint?</summary>
+<p>
+Let's test your newly `/movies` endpoint to make sure you've got everything working well so far.
+If you ping it, how does the data look like?
+
+This is an expected response to make sure you're on track:
+
+```json
+[
+    {
+        "id": "1",
+        "title": "The Matrix",
+        "plot": "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+        "year": 1999,
+        "length": 136,
+        "genre": [
+            "action",
+            "sci-fi"
+        ]
+    },
+    {
+        "id": "2",
+        "title": "Interstellar",
+        "plot": "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+        "year": 2014,
+        "length": 169,
+        "genre": [
+            "adventure",
+            "drama",
+            "sci-fi"
+        ]
+    }
+]
+```
+
+</p>
+</details>
+
+
+<details><summary>Hint 4: Did you finalize that contract?</summary>
+<p>
+So what's going on with the API Contract?
+
+Did you the two teams Movies and Reviews sit together to finalize their contract? I sure hope so!
+
+If not, this should be a good time to check-up on that and make sure you've got your expectation straight.
+
+</p>
+</details>
+
+
+<details><summary>Hint 5: Let's build a utility to call the Reviews API service</summary>
+<p>
+It makes sense that we will have our own dedicated util class that handles interactions with the Reviews API. It's a simple HTTP client that will take the responsibility of all of these interactions.
+
+Create this new [utils/ReviewsClient.js](./utils/ReviewsClient.js) file and append the following:
+```js
+const axios = require('axios')
+const config = require('../config/index')
+
+class ReviewsClient {
+  static async getAllMoviesStatistics() {
+    const reviewsSummaryEndpoint = `${config.reviewsServiceBaseURL}/stats`
+    try {
+      const response = await axios.get(reviewsSummaryEndpoint, {
+        responseType: 'json'
+      })
+
+      return response.data
+    } catch (err) {
+      return []
+    }
+  }
+}
+
+module.exports = ReviewsClient
+```
+
+Let's summarize this short snippet:
+* We're loading the app's configuration to get the domain, port and HTTP protocol for the Reviews API service
+* We're then defining a method to call the remote API service and return the data as is
+
+</p>
+</details>
+
+Does it all go according to plan so far?
+
+Yes, we didn't yet make use of this new ReviewsClient library because we'd like to test it first, and what better way to test it than to create the contract for it?
+
+### Provider Step-by-step
+<details><summary>Hint 1: Discuss the API contract with your Consumer!</summary>
+<p>
+The Movies service, and possibly other consumers, are going to need some data from you. Great stuff! It means some teams need you services and what a better way to start the day than an API design discussion?
+
+Your consumers will probably need to know:
+* which endpoint and HTTP methods to hit on your API
+* How the data you will respond with is going to look like
+
+Remember, while you own the API it is preferable to understand the needs of your consumers and create a discussion, instead of you dictating the terms of the contract.
+
+Also note that you are not designing an API strictly for the Movies services. Maybe another service will need it too?
+</p>
+</details>
+
+<details><summary>Hint 2: Propose this API contract to your Consumer</summary>
+<p>
+The API endpoint is: 
+```
+/stats
+```
+
+Example data structure it will return:
+```json
+[
+    {
+        "id": "1",
+        "totalReviews": 100,
+        "averageRating": 7.5
+    },
+    {
+        "id": "2",
+        "totalReviews": 32,
+        "averageRating": 8.5
+    }
+]
+```
+
+</p>
+</details>
+
+<details><summary>Hint 3: Scaffold out a quick and simple /stats endpoint</summary>
+
+<p>
+
+### New router
+Let's start by adding a new router for `/stats` to [app.js](./app.js):
+
+```js
+app.use('/stats', statsRouter)
+```
+
+### New route
+Let's create the relevant router entry at [routes/statsRouter.js](./routes/statsRouter.js), and add the following route definition for it:
+
+```js
+const express = require('express')
+const router = express.Router()
+
+const StatsController = require('../controllers/StatsController')
+
+router.get('/', StatsController.get)
+
+module.exports = router
+```
+
+### New controller
+Let's create the relevant controller for `StatsController` which is being referenced in the route.
+
+Create a new file at [controllers/StatsController.js](./controllers/StatsController.js), and add the following controller class and methods to it:
+
+```js
+const Repository = require('../repositories/stats')
+
+class StatsController {
+  static async get(req, res) {
+    try {
+      const movieIds = req.query.movieId || []
+      const statsSummaryDTO = await Repository.getAll(movieIds)
+
+      if (!statsSummaryDTO.length) {
+        return res.status(404).end()
+      }
+
+      return res.status(200).json(statsSummaryDTO)
+
+    } catch (err) {
+      console.error(err)
+      return res.status(500).end()
+    }
+  }
+}
+
+module.exports = StatsController
+```
+
+The simple controller:
+* Imports and uses the Repository's data access layer to access information about its movie statistics and reviews
+* Define the method and call the repository to get all stats based on a query parameter that is also supported here to search for specific movie IDs
+
+</p>
+</details>
+
+<details><summary>Hint 4: Do you need to test the API quickly?</summary>
+<p>
+
+Start the Node.js API service:
+
+```
+$ npm run start
+```
+
+And run some API calls to it using `curl` or similar.
+
+</p>
+</details>
+
+<details><summary>Hint 5: Not seeing any data in the response for the API? Seed your database</summary>
+<p>
+
+Checkout the example database file at [data/seed.json](./data/seed.json) which includes an example dataset for the database. 
+
+Here's a snippet of what it should look like:
+
+```json
+{
+  "stats": [
+    {
+      "id": "1",
+      "totalReviews": 100,
+      "averageRating": 7.5
+    },
+    {
+      "id": "2",
+      "totalReviews": 32,
+      "averageRating": 8.5
+    }
+  ],
+  "reviews": []
+}
+```
+
+You can test it out easily by overwriting the empty database at `[db.json](./db.json)` like this:
+
+```
+$ cp ./data/seed.json ./db.json
+```
+
+And now re-run your Node.js API service again and send another request.
+
+</p>
+</details>
 
 ## Step 2: Test Consumer and Provider API endpoints
 
@@ -255,6 +561,204 @@ provider.finalize()
 
 This happens at the end of all the tests and you can expect to see the generated pact contract in the directory you specified when instantiating and setting up Pact (it should be in `/pacts/` if you haven't changed the suggested configuration). 
 
+
+### Consumer Step-by-step
+
+Remember that we have our `ReviewsClient` utility? it's working so let's test it!
+
+<details><summary>Hint 6: Let's get started with a bare-bones ReviewsClient.test.js, shall we?</summary>
+<p>
+
+Create the contract unit test file at [__tests__/ReviewsClient.test.js](__tests__/ReviewsClient.test.js) and start pouring some basic code into it:
+
+```js
+const ReviewsClient = require('../utils/ReviewsClient')
+const { Pact, Matchers } = require('@pact-foundation/pact')
+```
+
+We're starting out with importing our ReviewsClient which we will test, and we're importing the `Pact` and `Matchers` objects, which:
+* Pact - handles instantiating the pact mock service and interacting with it, providing the test harness altogether around the Pact framework and the contract
+* Matchers - a helpful utility to help us match response API data structures
+
+</p>
+</details>
+
+<details><summary>Hint 7: Declare the contract participants</summary>
+<p>
+
+The test is essentially defining the contract when it runs (successfully), and for that we need to define the two-sides of the contract.
+
+When starting to declare the contract, you need to ask yourself:
+* What is the name of the consumer service?
+* What is the name of the provider service?
+* Which port am I accessing the provider service at? I need to know this so I will be able to listen to requests on this port and shoot requests to it.
+
+Add the following to the test:
+
+```js
+const CONSUMER = 'Movies'
+const PROVIDER = 'Reviews'
+const MOCK_PROVIDER_PORT = 3002
+
+describe('Reviews contract tests', () => {
+  let provider
+
+  beforeAll(async () => {
+    provider = new Pact({
+      consumer: CONSUMER,
+      provider: PROVIDER,
+      port: MOCK_PROVIDER_PORT,
+      log: process.cwd() + '/logs/pact.log',
+      dir: process.cwd() + '/pacts',
+      logLevel: 'INFO',
+      spec: 2
+    })
+
+    await provider.setup()
+  })
+
+  afterAll(async () => {
+    await provider.finalize()
+  })
+})
+```
+
+In this test suite, we are instantiating a new `Pact` service and calling `provider.setup()` which spins up an actual HTTP service on the port we provided that awaits your client requests to be made to it.
+
+We add a catch-all function (`afterAll`) to make sure that once all of the contract assertions has been   successfully verified we also create the actual Pact contract file (in `/pacts` directory as noted in the `beforeAll` initialization)
+
+</p>
+</details>
+
+<details><summary>Hint 8: In a new sub test suite what does the interaction look like?</summary>
+<p>
+
+Now you want to nest a `describe()` test suite block and start some assertions. One of which is that the reviews client util needs to receive statistics data.
+
+Looking at this test skeleton, ask yourself what does an interaction look like?
+* What is the request being sent by the ReviewsClient util? what HTTP method, and endpoint am I hitting on the remote service?
+* What does the response being sent by the Reviews API service? What HTTP status code is being received back? what headers should I expect this response to be received with? What does the body of the HTTP message look like?
+
+The two above questions create the contract.
+
+Also to consider:
+* Think about what type of matchers can help you to describe the response being sent back.
+* What is the name of this request being made? and what state is the reviews service found in this interaction?
+
+```js
+describe('Reviews client tests', () => {
+    test('should receive movie statistics when requesting all of them', async () => {
+      await provider.addInteraction({
+        // ... interaction goes here
+      })
+
+      // and don't forget you need to assert that it actually worked as expected:
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+})
+```
+</p>
+</details>
+
+<details><summary>Hint 9: Solution for above new sub test suite </summary>
+<p>
+
+This is how that test should look like:
+
+```js
+describe('Reviews client tests', () => {
+    test('should receive movie statistics for specified movies', async () => {
+      await provider.addInteraction({
+        state: 'Has reviews statistics for movie',
+        uponReceiving: 'a request for all movies stats summary',
+        withRequest: {
+          method: 'GET',
+          path: `/stats`
+        },
+        willRespondWith: {
+          status: 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: Matchers.eachLike(
+            {
+              'id': Matchers.like('1'),
+              'totalReviews': Matchers.like(100),
+              'averageRating': Matchers.like(7.5)
+            }
+          )
+        }
+      })
+
+      const result = await ReviewsClient.getAllMoviesStatistics()
+      expect(result.length).toEqual(1)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+```
+
+</p>
+</details>
+
+<details><summary>Hint 10: Run the unit test </summary>
+<p>
+
+Go ahead and run the unit tests.
+
+It's easy. Just like any other Jest unit tests you might have written before:
+```js
+$ npm run test
+```
+
+I really hope they passed! $-)
+
+</p>
+</details>
+
+<details><summary>Hint 11: Check the contract! </summary>
+<p>
+
+Did the unit tests pass? If so this is amazing! You wrote your first API contract.
+
+Take a look at [pacts/](./pacts) directory and see which file exists there now. How does the API contract look like?
+
+</p>
+</details>
+
+<details><summary>Hint 12: Are you really only testing positive scenarios? </summary>
+<p>
+
+Even though the Reviews API service was built by top-notch engineers, you know that at some point it's going to fail you, right? It might reply with a 500 server error or perhaps a 404 because no stats data exist. If that happens, you should know to expect it. Does a 404 return something in the body? I don't know, but surely you'd want to test that your ReviewsClient utility knows how to handle it and that this is enforced as part of the contract, right?
+
+</p>
+</details>
+
+<details><summary>Hint 13: Testing for negative API responses too </summary>
+<p>
+
+Add the following test to the reviews test suite:
+
+```js
+    test('should handle a request that responds with no stats summary', async () => {
+      await provider.addInteraction({
+        state: 'Has no statistics',
+        uponReceiving: 'a request for movies statistics',
+        withRequest: {
+          method: 'GET',
+          path: `/stats`
+        },
+        willRespondWith: {
+          status: 404
+        }
+      })
+
+      const result = await ReviewsClient.getAllMoviesStatistics()
+      expect(result.length).toEqual(0)
+      await expect(provider.verify()).resolves.toBeTruthy()
+    })
+```
+
+</p>
+</details>
+
+
 ### Provider Testing
 
 Contract testing for the provider means that the provider needs to ensure that the API it provides adheres to the contract that was previously set.
@@ -273,59 +777,30 @@ A general flow of how provider testing would take place:
 
 Note: providers would be blocked on consumers creating a contract file before they can go on with contract testing on their side.
 
-#### Setting up 
 
-Instantiate a pact verifier instance.
+### Provider Step-by-step
+
+<details><summary>Hint 6: Initializing a Pact verifier for contracts</summary>
+<p>
+
+We're setting up Pact. Instantiate a pact verifier instance as below in [__tests__/ReviewsContracts.test.js](./__tests__/ReviewsContracts.test.js):
 
 ```js
 const { Verifier } = require('@pact-foundation/pact')
 const pactVerifier = new Verifier()
 ```
 
-#### Setting up Provider States
+</p>
+</details>
 
-The states management service would expose an API endpoint that the pact runner can call and tell it to transition into a specific state.
+<details><summary>Hint 7: Replaying Contract Testing for the Provider</summary>
+<p>
 
-State is usually managed in web applications using a persistency store like a database, so it makes sense that the states management service can re-use a repository from the provider's API, but there are of course other ways to do it.
+All that the Pact test harness does for the Provider is to download the contracts from the broker for the correct Consumer-Provider pair, and re-play them on a running Provider service.
 
-In the following, is an example of a small ExpressJS web application that sets up a POST endpoint at `/setup` to handle the pact runner requests to change states.
+All this configuration is provided to the Pact test framework which takes care of it.
 
-```js
-// Setup endpoint
-statesRouter.post('/setup', statesController)
-
-// Perform any database table migrations if required (this is mostly required for the workshop, and not for real-life use cases)
-await seed.tableMigrate()
-
-// Setup the controller for the endpoint
-async function statesController(req, res) {
-  try {
-    const state = req.body.state
-    
-    switch (state) {
-      case 'Has no dogs':
-        // Delete all the dogs entry in the database so that the 
-        // API will respond with a 404 Not Found
-        await seed.clearAllData()
-        break
-      case 'Has a few dogs':
-        // Delete all dogs and insert just a few entries to the database
-        await seed.clearAllData()
-        await seed.populateData()
-        break
-    }
-
-    return res.status(200).end()
-  } catch (err) {
-    console.log(err)
-    return res.status(500).end()
-  }
-}
-```
-
-The `seed` dependency used here is merely a small wrapper around database commands to clean the database, or insert some records.
-
-#### Replaying Contract Testing for the Provider
+Add the below snippet to the provider contract tet file [__tests__/ReviewsContracts.test.js](./__tests__/ReviewsContracts.test.js):
 
 ```js
 const options = {
@@ -350,33 +825,251 @@ pactVerifier.verifyProvider(options)
 
 Note: calling the `verifyProvider()` method may take some time to complete because it is instantiating the pact runner as well as changing states, and interacting with the provider API all during this method call. As such, to ensure it can complete for the test case, enough time needs to be allotted for the test to run.
 
-#### Putting it all together
+Per the note above, you may need to also update the contract test file with the following that informs jest to have a hard timeout of 30 seconds before the test file fails.
+
+```js
+// this is required due to the time it takes to spin up the verification process
+// such as: d/l the pacts from the broker and running the tests
+jest.setTimeout(30000);
+```
+
+</p>
+</details>
+
+<details><summary>Hint 8: Updating configuration for Pact Broker integration</summary>
+<p>
+
+But wait, there's more to it.
+
+Where does all of this configuration come from? What's the reference for the `config` variable specified in the `options` variable in the previous hint?
+
+Add to the top of [__tests__/ReviewsContracts.test.js](./__tests__/ReviewsContracts.test.js) the following modules and files that we need to import to access our configuration and package details.
+
+```js
+const path = require('path')
+const pkg = require(path.resolve('./package.json'))
+const config = require(path.resolve('./config'))
+```
+
+</p>
+</details>
+
+<details><summary>Hint 9: Configuration library is cool, but where does configuration come from?</summary>
+<p>
+
+That's the correct question to ask!
+
+Let's make sure we update the Node.js API service that we built with the relevant configuration values. Update [config/index.js](./config/index.js) with the following:
+
+```js
+require('dotenv').config()
+
+const config = {
+  provider: 'Reviews',
+  providerBaseUrl: 'http://localhost:3002',
+  providerStatesSetupUrl: 'http://localhost:4011/setup',
+  pactBrokerUrl: process.env.BROKER_BASE_URL || 'http://localhost',
+  pactBrokerUsername: process.env.BROKER_USERNAME,
+  pactBrokerPassword: process.env.BROKER_PASSWORD,
+  pactConsumersTag: process.env.CONSUMERS_CONTRACT_TAG || 'develop'
+}
+
+module.exports = config
+```
+
+Note: check with the workshop trainer for the actual values of `providerBaseUrl`, `providerStatesSetupUrl` and possibly the rest of the pact broker details such as the username, password, and so on.
+
+</p>
+</details>
+
+<details><summary>Hint 10: Setting up Provider States</summary>
+<p>
+
+So far we've just worked on creating a Pact-based test harness that downloads contracts and re-plays them against the Node.js API service. However, how does the application knows which data to return for each interaction in the contract? That's where states management comes in.
+
+Note: State management is not something you required to add to your Node.js API service logic. It's a Pact-related state logic and is not expected to be part of your application for a production running service.
+
+The states management service would expose an API endpoint that the pact runner can call and tell it to transition into a specific state.
+
+State is usually managed in web applications using a persistency store like a database, so it makes sense that the states management service can re-use a repository from the provider's API, but there are of course other ways to do it.
+
+In the following, is an example of a small ExpressJS web application that sets up a POST endpoint at `/setup` to handle the pact runner requests to change states.
+
+Let's set this small API that will handle the state in [tests/providerStates.js](./tests/providerStates.js). Note that we chose to put it in the `tests/` folder because it's not an actual test spec file that the test framework (jest in our case) will run. Think of it as a test utility that helps us test. Maybe I should've called it `tests-utils/` ? What can I say, naming things is hard!
+
+So let's scaffold out a quick express skeleton:
+
+```js
+const express = require('express')
+const logger = require('morgan')
+const seed = require('./seed')
+
+const STATES_API_PORT = 4011
+
+const app = express()
+const statesRouter = express.Router()
+
+app.use(logger('dev'))
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+
+app.use('/', statesRouter)
+```
+
+We've got the statesRouter for state management, let's make use of it with a decent controller:
+
+```js
+// Setup endpoint
+statesRouter.post('/setup', statesController)
+
+// Setup the controller for the endpoint
+async function statesController(req, res) {
+  try {
+    const state = req.body.state
+  
+    console.log('Transition to state: ', state)
+
+    switch (state) {
+      case 'Has no statistics':
+        await seed.deleteAllStats()
+        break
+      case 'Has reviews statistics for movie':
+        await seed.deleteAllStats()
+        await seed.populateStats()
+        break
+    }
+
+    return res.status(200).end()
+  } catch (err) {
+    console.log(err)
+    return res.status(500).end()
+  }
+}
+```
+
+What's the `seed` thing doing?
+Well it's just another test util that helps us seed data to the database, depending on the state that the interaction needs to transition into.
+
+Take a look at [tests/seed.js](./tests/seed.js) to see that it's a simple database CRUD interface for us to change database records. It even uses the same database abstraction layer (DAL) that we use in the Node.js API service for our business logic. In other words, The `seed` dependency used here is merely a small wrapper around database commands to clean the database, or insert some records.
+
+Even though `seed.js` is just a test util, do go through it to understand what and why it does so you get this part nailed.
+
+Lastly, add to our state management file the following code to make sure we actually reset the database state to begin with, and then begin listening for HTTP requests:
+
+```js
+// Perform any database table migrations if required (this is mostly required for the workshop, and not for real-life use cases). We do database migration first, then listen
+seed.tableMigrate()
+app.listen(STATES_API_PORT)
+```
+
+</p>
+</details>
+
+<details><summary>Hint 11: Let's run a provider contract test, shall we?</summary>
+<p>
+
+Let's put it all together.
 
 To tie up the whole process together for running provider contract testing:
-1. Execute the API service (i.e: `npm start`)
-2. Execute the state management API service (i.e: `npm run provider:states`)
-3. Run provider contract tests
+1. Execute the API service: `npm start`
+2. Execute the state management API service: `npm run provider:states`
+3. Run provider contract tests: `npm run test`
 
-Only once (1) and (2) are up and ready to process requests should (3) provider contract tests start executing.
+I advise that you open 3 terminal tabs in the same terminal window to run all the above commands so you can easily see how the pizza fits in. Oh wait, I meant how the puzzle fits in. Apologies, it's my cravings for pizzas!
 
-## Step 3: Publish Contracts to Broker
+Important! Only once (1) and (2) are up and ready to process requests should (3) provider contract tests start executing.
+
+</p>
+</details>
+
+<details><summary>Hint 12: Something is wrong with the provider tests?</summary>
+<p>
+
+If your provider contract tests are failing don't worry, we'll fix it.
+
+Why are they failing?
+
+If they are failing because the Pact framework can't find any contracts to download then that's expected. Did the consumer remember to publish their contracts? Talk to them. Communication is key!
+
+</p>
+</details>
+
+## Step 3: Consumer-part to Integrate with the Reviews API service
+
+<details><summary>Hint 14: Let's start integrating a new endpoint for fetching statistics data from the reviews API!</summary>
+<p>
+
+Now that we've got something fairly simple going on and we know our way around the data, the routes and the controller let's prepare a new route to list movies with their reviews statistics as well.
+
+Let's call this new route `/movies/stats`, and add it to our [routes/moviesRouter.js](./routes/moviesRouter.js):
+
+```js
+router.get('/stats', MoviesController.getWithAllStatsWithFilter)
+```
+
+This route makes use of a new static method on the controller named `getWithAllStatsWithFilter` which we also need to add in [controllers/MoviesController.js](./controllers/MoviesController.js):
+
+```js
+  static async getWithAllStatsWithFilter(req, res) {
+    try {
+      const title = req.query.title || ''
+      const moviesCollection = Repository.findBy('title', title)
+
+      if (moviesCollection.size <= 0) {
+        return res.status(404).end()
+      }
+
+      const statsSummary = await ReviewsClient.getAllMoviesStatistics()
+
+      statsSummary.forEach(movieStats => {
+        const movie = moviesCollection.get(movieStats.id)
+        if (movie) {
+          moviesCollection.set(movie.id,
+            { ...movie, totalReviews: movieStats.totalReviews, averageRating: movieStats.averageRating })
+        }
+      })
+
+      return res.status(200).json([...moviesCollection.values()])
+
+    } catch (err) {
+      return res.status(500).end()
+    }
+  }
+```
+
+There's quite a bit of logic here, let's explain:
+* The controller expects to get a `title` query parameter to filter results based on text search
+* For all the results that were matched in the DB we're collecting their movie IDs
+* And then using our ReviewsClient utility that calls the Reviews service API and returns the data
+* We loop through the returned data and match it to each movie
+* Return the result as JSON to the API caller
+
+</p>
+</details>
+
+## Step 4: Consumer should publish Contracts to Broker
 
 Once the consumer has contract tests implemented and passing, we can publish them to the broker.
 
 To do so, we make use of the following tools:
 
 * Pact Manifest Generation - by running `npm run pact:generate` in a project that has an existing contract, it will create a manifest file that lists all the contracts and their tags.
-* Publish Contracts based on Manifest - by running `npm run pact:publish:dev` the manifest is investigated to figure out which contracts to publish and how to tag them.
+* Publish Contracts based on Manifest - by running `npm run pact:publish:dev` the manifest is investigated to figure out which contracts to publish and how to tag them. You should prefix this npm run command with environment variables information to be able to access the broker. The full command should be: `BROKER_BASE_URL=http://localhost BROKER_USERNAME=XYZ BROKER_PASSWORD=XYZ npm run pact:can-i-deploy` replacing XYZ for user and password, as well as the broker base URL based on the details provided by the workshop trainer.
 
+## Step 5: Consumer Deploys to Production
 
-## Step 4: Deploy to Production
+Can the consumer deploy to production? What should you check before doing that? What can break if you deploy?
 
-TBD
+You can actually test if you're able to deploy to production:
 
-Can you deploy?
+```bash
+BROKER_BASE_URL=http://localhost BROKER_USERNAME=XYZ BROKER_PASSWORD=XYZ npm run pact:can-i-deploy
+```
+
+So can you deploy?
 Explore the broker
 
-## Step 4: Integrate a CI/CD Pipeline
+## Step 6: Integrate a CI/CD Pipeline
 
 TBD
 
@@ -407,10 +1100,7 @@ GET /stats?movieIds[]=1&movieIds[]=2
  ]
 
 
-
-
-
-## TBD ???
+## Movies and Reviews service data points
 
 Example Movies consumer service API endpoint and response prior to integration with the Reviews service: `/movies?title=the%20matrix`
 ```json
@@ -442,7 +1132,6 @@ The Reviews service API is a provider for the Movies service and supports the fo
   },
 ]
 ```
-
 
 # Operating the Consumer & Provider
 
@@ -530,7 +1219,6 @@ npm run pact:provider:test
 npm run pact:provider:cleanup
 ```
 
-
 ### Seed Data
 
 Seed reviews data
@@ -568,7 +1256,6 @@ To further explain them:
 * `like` is used to match a single data type (primitive or complex)
 * `term` is used as a regex to match string data types
 * `iso8601DateTimeWithMillis` is helpful to match ISO date types, such as: 2018-01-01T00:00:00.000Z
-
 
 ## Request Matching (query)
 

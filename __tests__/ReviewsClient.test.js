@@ -46,7 +46,7 @@ describe('Reviews contract tests', () => {
               'totalReviews': Matchers.like(100),
               'averageRating': Matchers.like(7.5)
             }
-          ) 
+          )
         }
       })
 
@@ -55,6 +55,9 @@ describe('Reviews contract tests', () => {
       await expect(provider.verify()).resolves.toBeTruthy()
     })
 
+    // this is the same test as above but the only difference being that it uses
+    // the query param to ask for specific movies. this can be used as another step
+    // in the workshop but for getting things going easily it is commented to begin with
     test.skip('should receive movie statistics for specified movies', async () => {
       await provider.addInteraction({
         state: 'Has reviews statistics for movie',
