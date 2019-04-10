@@ -972,7 +972,7 @@ Let's put it all together.
 
 To tie up the whole process together for running provider contract testing:
 1. Execute the API service: `npm start`
-2. Execute the state management API service: `npm run provider:states`
+2. Execute the state management API service: `npm run pact:provider:states`
 3. Run provider contract tests: `npm run test`
 
 I advise that you open 3 terminal tabs in the same terminal window to run all the above commands so you can easily see how the pizza fits in. Oh wait, I meant how the puzzle fits in. Apologies, it's my cravings for pizzas!
