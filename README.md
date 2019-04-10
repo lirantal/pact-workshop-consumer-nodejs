@@ -295,10 +295,7 @@ Also note that you are not designing an API strictly for the Movies services. Ma
 
 <details><summary>Hint 2: Propose this API contract to your Consumer</summary>
 <p>
-The API endpoint is: 
-```
-/stats
-```
+The API endpoint is: `/stats`
 
 Example data structure it will return:
 ```json
