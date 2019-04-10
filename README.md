@@ -666,32 +666,31 @@ describe('Reviews client tests', () => {
 This is how that test should look like:
 
 ```js
-describe('Reviews client tests', () => {
-    test('should receive movie statistics for specified movies', async () => {
+  describe("Reviews client tests", () => {
+    test("should receive movie statistics for specified movies", async () => {
       await provider.addInteraction({
-        state: 'Has reviews statistics for movie',
-        uponReceiving: 'a request for all movies stats summary',
+        state: "Has reviews statistics for movie",
+        uponReceiving: "a request for all movies stats summary",
         withRequest: {
-          method: 'GET',
+          method: "GET",
           path: `/stats`
         },
         willRespondWith: {
           status: 200,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: Matchers.eachLike(
-            {
-              'id': Matchers.like('1'),
-              'totalReviews': Matchers.like(100),
-              'averageRating': Matchers.like(7.5)
-            }
-          )
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: Matchers.eachLike({
+            id: Matchers.like("1"),
+            totalReviews: Matchers.like(100),
+            averageRating: Matchers.like(7.5)
+          })
         }
-      })
+      });
 
       const result = await ReviewsClient.getAllMoviesStatistics()
       expect(result.length).toEqual(1)
       await expect(provider.verify()).resolves.toBeTruthy()
     })
+  })
 ```
 
 </p>
