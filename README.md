@@ -327,6 +327,7 @@ Example data structure it will return:
 Let's start by adding a new router for `/stats` to [app.js](./app.js):
 
 ```js
+const statsRouter = require("./routes/statsRouter");
 app.use('/stats', statsRouter)
 ```
 
