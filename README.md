@@ -1380,3 +1380,7 @@ body: [
 # Contract Testing Guidelines and Best Practices
 
 TBD
+
+## Contributing
+
+Please consult [CONTRIBUTING](./CONTRIBUTING.md) for guidelines on contributing to this project.
