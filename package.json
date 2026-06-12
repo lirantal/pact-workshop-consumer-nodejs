@@ -25,5 +25,9 @@
   },
   "jest": {
     "testEnvironment": "node"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.10.0"
   }
 }
