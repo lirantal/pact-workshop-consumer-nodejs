@@ -28,7 +28,7 @@
     "@pact-foundation/pact": "^17.1.2",
     "jest": "^30.4.2",
     "@changesets/changelog-github": "^1.0.0",
-    "@changesets/cli": "^3.0.0",
+    "@changesets/cli": "^3.0.1",
     "markdownlint-cli": "0.49.1"
   },
   "jest": {
